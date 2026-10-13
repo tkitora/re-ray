@@ -10,6 +10,8 @@ LoRa の1パケットは小さく保つ。**17バイト前後**を目標にす�
 | 1〜2 | 2 | src(送信元の端末番号、u16、ビッグエンディアン) |
 | 3〜4 | 2 | seq(送信元ごとの連番、u16) |
 
+ver は 1(実装は `kFrameVersion`。仕様に値の指定がなかったため仮置き)。
+
 type: 0=REPORT、1=SOS、2=INSTRUCT、3=ACK、4=BEACON(実測用)、5〜7=予約
 
 重複排除のキー:`(src, seq, type)`
@@ -29,7 +31,10 @@ type: 0=REPORT、1=SOS、2=INSTRUCT、3=ACK、4=BEACON(実測用)、5〜7=予約
 
 needs のビット:bit0=食料、bit1=医療、bit2=水、bit3=その他
 
-flags:bit0=SOS、bit1=確認済み(0=推定)、bit2=GPS有効、bit3〜7=予約
+flags:bit0=SOS、bit1=確認済み(0=推定)、bit2=GPS有効、**bit3〜7=定型信号コード(0〜31、0=指定なし)**
+
+定型信号コードは、Drive の共通仕様「01_IDと定型信号」のコード(1=SOS、2=無事、3=助けて、4=食料)をそのまま載せる。
+出口がサーバーへ出す signal の `code` になる(SOS フレーム(type=1)は code=1 とする)。【2026-10-13 変更案。Drive 側の合意待ち】
 
 SOS(type=1)は REPORT と同じ配置で、優先度を高くする。
 

@@ -6,14 +6,18 @@
 mosquitto -c server/mosquitto.conf -v
 ```
 
-## トピック案
+## トピック(Drive 共通仕様「03_MQTTトピック」に従う)
 
-| トピック | 方向 | 内容(JSON) |
-|---|---|---|
-| `reray/up/report` | 出口 → PC | 受信した REPORT/SOS(src, seq, zone, 各区分, flags, time, rssi, snr, gw) |
-| `reray/up/ack` | 出口 → PC | 受信した ACK(指示受領など) |
-| `reray/down/instruct` | PC → 出口 | 送る指示(target_kind, target, code, param) |
-| `reray/gw/status` | 出口 → PC | 出口の状態(Wi-Fi、LoRa、キューの数、電池) |
+`{id}` は端末ID(例 `dev-001`)。JSON の形は Drive の「02_メッセージ形式」。出口ノードが LoRa で受けた分は `via` が `lora`。
+
+| トピック | 向き | 中身 | QoS |
+|---|---|---|---|
+| `reray/v1/up/{id}/signal` | 出口 → サーバー | signal(`x` に zone・RSSI などの追加項目を入れることがある【変更案】) | 1 |
+| `reray/v1/up/{id}/status` | 出口 → サーバー | status | 0 |
+| `reray/v1/up/{id}/ack` | 出口 → サーバー | ack(指示受領) | 1 |
+| `reray/v1/down/{id}/text`、`reray/v1/down/all/text` | サーバー → 出口 | text | 1 |
+
+LoRa で text をどう運ぶか(INSTRUCT は 18 バイトで自由な文字は載らない)は未決定。`docs/HANDOFF_TO_COMMON_SPEC.md` を参照。
 
 ## 作るもの(Claude Code)
 

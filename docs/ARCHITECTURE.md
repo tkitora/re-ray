@@ -59,7 +59,7 @@ flowchart LR
 T-Beam → XIAO(表示用)
 
 ```
-STATE,<seq>,<state>          送信した報告の状態(SENT / NEAR / SERVER / RETRY)
+STATE,<seq>,<state>          送信した報告の状態(SENT / NEAR / SERVER / RETRY / FAIL=未達で再送を打ち切った)
 INSTR,<seq>,<code>,<param>   受信した指示
 STATUS,<batt%>,<zone>,<role>,<lora_ok>,<wifi_ok>
 LOG,<text>                   表示したい短い文

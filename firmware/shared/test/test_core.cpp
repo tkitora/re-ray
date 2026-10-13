@@ -1,4 +1,4 @@
-// PC 上のユニットテスト。依存なしの最小ハーネス。 `make -C firmware/shared test`
+// 署名・フレーム・重複排除・送信時間・電波法ガードのテスト。
 #include <stdio.h>
 #include <string.h>
 
@@ -7,19 +7,9 @@
 #include "reray/frame.h"
 #include "reray/sha256.h"
 #include "reray/tx_guard.h"
+#include "harness.h"
 
 using namespace reray;
-
-static int g_fail = 0;
-static int g_checks = 0;
-#define CHECK(cond)                                                    \
-  do {                                                                 \
-    g_checks++;                                                        \
-    if (!(cond)) {                                                     \
-      g_fail++;                                                        \
-      printf("  FAIL %s:%d  %s\n", __FILE__, __LINE__, #cond);         \
-    }                                                                  \
-  } while (0)
 
 static void hex(const uint8_t* p, size_t n, char* out) {
   for (size_t i = 0; i < n; i++) snprintf(out + 2 * i, 3, "%02x", p[i]);
@@ -325,7 +315,7 @@ static void test_tx_guard() {
   CHECK(clampTxDbm(-5).dbm == 0 && clampTxDbm(-5).clamped);
 }
 
-int main() {
+void run_core_tests() {
   test_sha_hmac();
   test_frame_roundtrip();
   test_frame_layout();
@@ -336,6 +326,4 @@ int main() {
   test_airtime();
   test_budget();
   test_tx_guard();
-  printf("\n%d checks, %d failed\n", g_checks, g_fail);
-  return g_fail == 0 ? 0 : 1;
 }

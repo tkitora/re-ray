@@ -33,6 +33,16 @@ constexpr uint8_t kFlagSos = 1 << 0;
 constexpr uint8_t kFlagConfirmed = 1 << 1;
 constexpr uint8_t kFlagGpsValid = 1 << 2;
 
+// flags の bit3〜7(予約だった5bit)に、定型信号コード(0〜31)を載せる。【MESSAGE_SPEC への変更案】
+// Drive の共通仕様 01_IDと定型信号 のコード(1=SOS, 2=無事, 3=助けて, 4=食料)を、
+// LoRa を通ってサーバーの signal JSON まで運ぶため。0 は「指定なし」。
+constexpr uint8_t kFlagCodeShift = 3;
+constexpr uint8_t kMaxSignalCode = 31;
+inline uint8_t signalCodeOf(uint8_t flags) { return (uint8_t)(flags >> kFlagCodeShift); }
+inline uint8_t withSignalCode(uint8_t flags, uint8_t code) {
+  return (uint8_t)((flags & ((1u << kFlagCodeShift) - 1)) | ((code & kMaxSignalCode) << kFlagCodeShift));
+}
+
 struct Frame {
   Type type = Type::Report;
   uint8_t ttl = 0;
