@@ -1,0 +1,9 @@
+firmware/tbeam/include/secrets.h
+firmware/xiao/include/secrets.h
+server/zones.csv
+logs/
+sdk/guide01/
+.pio/
+.vscode/
+build/
+.claude/settings.local.json
