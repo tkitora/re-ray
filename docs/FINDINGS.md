@@ -9,10 +9,10 @@
 |---|---|
 | T-Beam の基板表記(V1.2 / AXP2101 か) | |
 | T-Beam の台数、ファームのバージョン | |
-| XIAO ESP32S3 のファーム環境 | |
+| XIAO ESP32S3 のファーム環境 | PlatformIO Core 6.2.0、espressif32 @ 6.13.0(framework-arduinoespressif32 3.20017.241212)、NimBLE-Arduino 1.4.3、board=seeed_xiao_esp32s3。ビルド成功のみ(実機未確認) |
 | GUIDE01 のファーム/版 | |
-| GUIDE01 SDK のバージョン(タグ) | |
-| PlatformIO、PC OS、Mosquitto の版 | |
+| GUIDE01 SDK のバージョン(タグ) | リポジトリ `783d69f`(2026-08-26、`v1.0.2.1` から 12 コミット先)、プロトコルライブラリ 2.0.0。対応する GUIDE01 本体は software 1.0.3 / resources 1.0.2(SDK の README による) |
+| PlatformIO、PC OS、Mosquitto の版 | PlatformIO Core 6.2.0(`uv tool install platformio --python 3.12`)、macOS(Darwin 25.5.0、arm64)、Mosquitto は `/opt/homebrew/sbin/mosquitto`(版は未記録) |
 
 ## 判定表(企画書の主張ごと)
 
@@ -34,12 +34,23 @@
 
 | 機能 | あり/なし/不明 | 関数名・クラス名 | 備考 |
 |---|---|---|---|
-| テキスト表示 | | | |
-| 複数行表示 | | | |
-| スクロール | | | |
-| 画像・GIF | | | |
-| タッチ/ジェスチャ通知 | | | |
-| 表示クリア | | | |
+| テキスト表示(通知) | あり(ヘッダで確認。実機未確認) | `g01_notification(name, title, content, time, buf, size)` → MSG_NOTIFY 特性に Write | 表示秒数は `g01_notification_display_time`。バッファは `G01_BUF_TEXT`(1024) |
+| テキスト表示(座標・色・サイズ指定) | あり(同上) | `g01_gif_text_display_elements(show_status_bar, items[], count, buf, size)` → GIF_TEXT_DISPLAY 特性。`G01DisplayItem{layer_id,type,x,y,width,height,resource_id,font_size,color,text}` | バッファ `G01_BUF_GIF_TEXT`(4096)。スタックに置くと ESP32 の loopTask(8KB)が足りない(SDK のサンプルに注意書きあり) |
+| 複数行表示 | あり(同上) | 上の `display_elements` に複数の text 要素を渡す(SDK のサンプルは 4 要素)。ほかに歌詞 3 行 `g01_lyric_data` | 1 行の文字数・行数は実機で測る |
+| スクロール | 不明 | ヘッダに該当する関数なし | 長文は分割して順に出す方針になる可能性 |
+| 画像・GIF | あり(同上) | `g01_image_builder_*`、`g01_gif_text_builder_*`、`g01_gif_text_upload_*`(JPEG は FILE 特性にチャンク転送) | 今回の用途では不要 |
+| タッチ/ジェスチャ通知 | あり(同上) | CMD 特性の Notify を購読 → `g01_parse_touch_event` → `G01TouchEventData{page_id,touch_event}`。種別は `g01_get_touch_consts()` の single_click / double_click / swipe_forward / swipe_back / long_press | 実機で受信できるかは S1 で確認 |
+| 表示クリア | あり(同上) | `g01_gif_text_close_page`、要素単位は `g01_gif_text_remove_element(layer_id)` | |
+| 電池 | あり(同上) | BATTERY_LEVEL 特性を Read → `g01_parse_battery_response` → `G01BatteryData{level,is_charging}`。ケース側は `g01_get_ble_box_battery_char` | |
+| 時刻設定 | あり(同上) | `g01_time_set(local_epoch, ...)`:**タイムゾーンは適用されない**(JST は UTC+9h を足して渡す) | XIAO は RTC がなく 1970 年から始まる。GPS 時刻を T-Beam から UART で渡す案(未実装) |
+| スキャン | あり(同上) | `g01_get_scan_filter()`(製造元データの ID とデータで絞る) | |
+| 画面サイズ | 不明(実行時に取得) | `g01_get_gif_text_consts()` の `screen_width/height/content_height` | ブートログに出す(`[consts]`)。数値は実機で記録する |
+
+SDK の調査メモ(2026-10-13):
+- `libs/esp32/xtensa/esp32s3/libguide01_protocol.a` は存在する。ただし `esp32` 用と SHA-256 が同一(MANIFEST.txt で確認)。同じバイナリを使っている。ESP32S3 でリンクは通る
+- SDK のサンプルは M5Unified 前提(M5Stick-C)。BLE 部分だけを取り出して `firmware/xiao/src/main.cpp` を作り、**ビルド成功**(RAM 10.1%、Flash 15.8%、警告なし)
+- 雛形の `platformio.ini` の問題:NimBLE-Arduino が無指定だった。SDK のサンプルは `^1.4.2` 前提(2.x は API が違う)。`^1.4.2` に固定し、`platform = espressif32 @ ^6.0` と `link_prebuilt.py`(SDK からコピーして libs のパスだけ変更)を使う形に直した
+- SDK のライセンス:Apache-2.0。README に「prebuilt バイナリも同じライセンス」とある(`sdk/README.md` の「再配布条件は未確認」を更新)
 
 表示の実測:1行の文字数、行数、日本語の可否:
 
@@ -59,6 +70,11 @@
 
 ### S0
 ### S1
+
+**2026-10-13:実機なしでできる部分まで**
+- SDK を clone(`sdk/guide01`、git 管理外)し、API を上の表に棚卸し
+- `firmware/xiao/src/main.cpp`(スキャン→接続→電池→タッチ受信→3 行表示→通知→100 回更新→日本語→桁数確認をシリアルから操作)を作り、`pio run -e xiao_esp32s3` が成功
+- **未実施(GUIDE01 と XIAO の実機が必要):** 接続、電池取得、文字表示、日本語の可否、1 行の文字数・行数、タッチ受信、100 回更新。手元に機材があるかをユーザーに確認中
 ### S2
 ### S3
 
