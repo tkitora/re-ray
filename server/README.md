@@ -1,6 +1,6 @@
 # server/
 
-検証用のサーバー側。PC で動かす。
+検証用の Mosquitto 設定だけを置く。**本物のサーバーは別リポジトリ**(`yuki20060410/Re-Ray_Server`、サーバー担当)。ここはハード単体の確認用。
 
 ```bash
 mosquitto -c server/mosquitto.conf -v
