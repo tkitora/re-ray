@@ -1,8 +1,10 @@
 // LoRa の送信時間(Semtech の式)と、送信時間の予算管理。
 //
-// ★ 予算の既定値は暫定(COMPLIANCE.md の確認欄 #7 が埋まるまで仮置き)。
-//    規格(ARIB STD-T108)で確認した値が分かったら、BudgetConfig を差し替える。
-//    「不明なうちは保守的に(短く、少なく)」の方針で、資料で見かけた値よりさらに小さくしてある。
+// ★ 予算の既定値は暫定。COMPLIANCE.md の確認欄 #7 が埋まるまで、調査結果(COMPLIANCE.md §3 の「調査結果」)より
+//    さらに保守的にしてある。主な根拠: 128µs 方式のキャリアセンスでは 1 回 0.4 秒以下・1 時間 360 秒以下、
+//    ARIB 英訳では 200ms を超えると休止が送信時間の 10 倍以上(総務省告示の統合版にはこの規定がなく、食い違い)。
+//    → 1 回を 200ms 以下に抑えれば 10 倍休止の論点を避けられる(17 バイトなら SF9 までは 165ms で収まる)。
+//    規格で確認した値が分かったら、BudgetConfig を差し替える。
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
@@ -30,9 +32,9 @@ enum class Priority : uint8_t { Sos = 0, Instruct = 1, Ack = 2, Report = 3, Beac
 
 struct BudgetConfig {
   uint32_t windowMs = 3600000;    // 集計する窓(1時間)
-  uint32_t windowLimitMs = 18000; // 窓内の送信時間の上限。暫定(資料にあった 36 秒の半分)
-  uint32_t singleMaxMs = 1000;    // 1回の送信の上限。暫定(資料にあった 4 秒未満よりずっと短く)
-  uint32_t minGapMs = 100;        // 送信後の休止。暫定(資料にあった 50ms 超の2倍)
+  uint32_t windowLimitMs = 18000; // 窓内の送信時間の上限。暫定(調査した上限 360 秒の 5%。LDC 方式の 36 秒の半分)
+  uint32_t singleMaxMs = 200;     // 1回の送信の上限。暫定(上限 400ms の半分。ARIB の「200ms 超は休止 10 倍」も避ける)
+  uint32_t minGapMs = 100;        // 送信後の休止。暫定(調査した下限 2ms より十分長い)
   uint8_t reportPercent = 80;     // REPORT は上限のこの割合まで
   uint8_t beaconPercent = 50;     // BEACON は上限のこの割合まで
 };

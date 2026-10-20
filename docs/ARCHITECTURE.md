@@ -54,7 +54,9 @@ flowchart LR
 
 ## 5. T-Beam ⇄ XIAO の UART 仕様(案)
 
-1行1メッセージの、改行区切りテキスト。115200bps、8N1。(最終的には、公式サンプルの確認とピン配置の確認の上で、実装時に確定する。)
+1行1メッセージの、改行区切りテキスト。115200bps、8N1。
+配線案(XIAO D6/D7 = GPIO43/44、T-Beam GPIO13/14)は `docs/PINMAP.md`。T-Beam 側のヘッダ位置と XIAO の論理レベルは実機で確認してから確定する。
+実装は `firmware/shared/include/reray/uart_proto.h`(行の形式と行バッファ。テスト済み)。
 
 T-Beam → XIAO(表示用)
 

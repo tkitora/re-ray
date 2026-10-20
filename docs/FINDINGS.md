@@ -69,6 +69,12 @@ SDK の調査メモ(2026-10-13):
 ## テストごとの記録
 
 ### S0
+
+**2026-10-13:規格の事前調査(Claude)。** 結果は `docs/COMPLIANCE.md` §3「調査結果」。**確認欄 §4 は未記入(=LoRa 送信は無効のまま)。**
+- 暫定の予算値が上限を超えていたため修正:1 回の送信 1 秒 → 200ms(128µs 方式の上限 0.4 秒、ARIB 英訳の「200ms 超は休止 10 倍」を避ける)。テストで確認
+- 食い違い(未解決):ARIB 英訳と総務省告示統合版で、200ms 超の休止の規定が違う
+- 要確認:識別符号(32 ビット以上)の要件と、私たちの 16 ビット src の関係
+- 要相談:自作ファームでの技適機器の利用が「変更の工事」に当たるか(総務省の直接の見解は見つからなかった)
 ### S1
 
 **2026-10-13:実機なしでできる部分まで**
@@ -76,6 +82,13 @@ SDK の調査メモ(2026-10-13):
 - `firmware/xiao/src/main.cpp`(スキャン→接続→電池→タッチ受信→3 行表示→通知→100 回更新→日本語→桁数確認をシリアルから操作)を作り、`pio run -e xiao_esp32s3` が成功
 - **未実施(GUIDE01 と XIAO の実機が必要):** 接続、電池取得、文字表示、日本語の可否、1 行の文字数・行数、タッチ受信、100 回更新。手元に機材があるかをユーザーに確認中
 ### S2
+
+**2026-10-13:ピン・ビルド設定の事前調査(T-Beam 未着。実機では何も確認していない)**
+- 結果は `docs/PINMAP.md`。公式 LilyGo-LoRa-Series のコミット `1991b1e` の `examples/Factory/utilities.h` を私が原文で確認し、LoRa(SPI・RST・DIO)、GPS、I2C、PMU 割り込み、ボタン(GPIO38)、LED(GPIO4、LOW 点灯)が調査報告と一致した。電源ライン(LoRa=ALDO2、GPS=ALDO3、ESP32=DCDC1)・回路図の読み取り・UART 用ピン(GPIO13/14)は調査報告のみで、原文は未確認
+- 雛形の `firmware/tbeam/platformio.ini` を公式に合わせて修正:PSRAM 指定(`-mfix-esp32-psram-cache-issue`、`-DBOARD_HAS_PSRAM`)、`huge_app.csv`、`platform = espressif32 @ 6.13.0`、ライブラリを公式同梱の版に固定(RadioLib 7.8.1、TinyGPSPlus 1.0.2、XPowersLib 0.2.6)、`-DT_BEAM_SX1276`。**公式の周波数(920.0MHz は範囲外)・出力(17dBm は上限超え)は流用しない**
+- 確認:`pio pkg install -e tbeam` が成功し、固定したライブラリ(RadioLib 7.8.1、TinyGPSPlus 1.0.2、XPowersLib 0.2.6、PubSubClient 2.8.0)が実在することを確認。**T-Beam 用のファームはまだ `src/` がなく、ビルドは未実施**
+- 確認できなかったこと:920MHz MIC 版の LoRa チップ型番(SX1276 の可能性が高いが断定不可)、GPS の型番、PPS の GPIO、V1.1/V1.2 の基板上の見分け方、XIAO の GPIO 論理レベル
+- 公式 `t_beam_hw.md` と、コード・回路図で、GPS の TX/RX の視点が食い違う(コードを採用)
 ### S3
 
 **2026-10-13:`firmware/shared/` のうち PC で検証できる部分を実装(T-Beam 未着。実機の確認はまだ)**

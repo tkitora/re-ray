@@ -300,6 +300,22 @@ static void test_budget() {
   CHECK(!s.canSend(Priority::Sos, 10000, 400));
 }
 
+static void test_budget_defaults() {
+  puts("tx budget defaults");
+  // COMPLIANCE.md §3 の調査結果(128µs 方式: 1回 0.4 秒以下、1時間 360 秒以下、休止 2ms 以上)の内側であること
+  BudgetConfig d;
+  CHECK(d.singleMaxMs <= 200);          // 400ms の半分。ARIB 英訳の「200ms 超は休止 10 倍」も避ける
+  CHECK(d.windowLimitMs <= 360000 / 10);
+  CHECK(d.minGapMs >= 2);
+  CHECK(d.windowMs == 3600000);
+  // 17 バイトのフレームは SF7〜9 なら 1 回の上限に収まり、SF10 以上は既定では送れない
+  TxBudget<8> b;
+  CHECK(b.canSend(Priority::Report, loraAirtimeUs(17, 7), 0));
+  CHECK(b.canSend(Priority::Report, loraAirtimeUs(17, 9), 0));
+  CHECK(!b.canSend(Priority::Report, loraAirtimeUs(17, 10), 0));
+  CHECK(!b.canSend(Priority::Sos, loraAirtimeUs(17, 10), 0));
+}
+
 // ---- 電波法ガード ----
 static void test_tx_guard() {
   puts("tx guard");
@@ -325,5 +341,6 @@ void run_core_tests() {
   test_seq_tracker();
   test_airtime();
   test_budget();
+  test_budget_defaults();
   test_tx_guard();
 }
